@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#f5f6fa">
+  <title>Meu Kanban</title>
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="firebase.js"></script>
+  <script type="module" src="script.js"></script>
+</head>
+<body>
+  <div id="auth-screen" class="auth-screen">
+    <div class="auth-card">
+      <div class="brand" aria-label="Meu Kanban — autenticação">
+        <span class="brand-mark" aria-hidden="true">K</span>
+        <span>meu<span class="brand-accent">kanban</span></span>
+      </div>
+
+      <div class="auth-tabs" aria-label="Método de autenticação">
+        <button type="button" class="auth-tab is-active" data-auth-mode="login">Entrar</button>
+        <button type="button" class="auth-tab" data-auth-mode="signup">Criar conta</button>
+      </div>
+
+      <form id="auth-form" class="auth-form" novalidate>
+        <label class="field-label" for="auth-email">E-mail</label>
+        <input class="text-field" id="auth-email" name="email" type="email" autocomplete="email" placeholder="seu@email.com" required>
+
+        <label class="field-label" for="auth-password">Senha</label>
+        <input class="text-field" id="auth-password" name="password" type="password" autocomplete="current-password" placeholder="Mínimo 6 caracteres" required>
+
+        <button class="button button-primary auth-submit" type="submit">Entrar</button>
+        <p id="auth-feedback" class="auth-feedback" role="status" aria-live="polite"></p>
+      </form>
+    </div>
+  </div>
+
+  <div id="app-shell" class="app-shell hidden">
+    <header class="topbar">
+      <a class="brand" href="#" aria-label="Meu Kanban — início">
+        <span class="brand-mark" aria-hidden="true">K</span>
+        <span>meu<span class="brand-accent">kanban</span></span>
+      </a>
+      <div class="topbar-actions">
+        <button class="button button-quiet" id="clear-board" type="button" aria-label="Limpar todos os cards do board">
+          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6m4-6v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>
+          <span>Limpar board</span>
+        </button>
+        <button class="button button-quiet" id="sign-out" type="button">Sair</button>
+        <button class="icon-button theme-toggle" id="theme-toggle" type="button" aria-label="Ativar tema escuro" title="Alternar tema">
+          <svg class="moon-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M20.2 15.1A8.5 8.5 0 0 1 8.9 3.8 8.5 8.5 0 1 0 20.2 15.1Z"/></svg>
+          <svg class="sun-icon" aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <main>
+      <section class="page-heading" aria-labelledby="page-title">
+        <div>
+          <p class="eyebrow">SEU ESPAÇO DE TRABALHO</p>
+          <h1 id="page-title">Meu Kanban</h1>
+          <p class="subtitle">Organize suas tarefas e acompanhe cada etapa.</p>
+        </div>
+        <button class="button button-primary" id="add-card" type="button">
+          <span class="plus-icon" aria-hidden="true">+</span>
+          Novo card
+        </button>
+      </section>
+
+      <section class="toolbar" aria-label="Filtros do board">
+        <label class="search-box" for="search-input">
+          <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/></svg>
+          <input id="search-input" type="search" placeholder="Buscar tarefas..." autocomplete="off">
+        </label>
+        <label class="priority-filter" for="priority-filter">
+          <span>Prioridade</span>
+          <select id="priority-filter">
+            <option value="todas">Todas</option>
+            <option value="alta">Alta</option>
+            <option value="media">Média</option>
+            <option value="baixa">Baixa</option>
+          </select>
+        </label>
+      </section>
+
+      <section class="board-wrap" aria-label="Quadro Kanban">
+        <div class="board" id="board" aria-live="polite"></div>
+        <button class="add-column-button" id="add-column" type="button">
+          <span aria-hidden="true">+</span> Adicionar coluna
+        </button>
+      </section>
+    </main>
+    <footer class="footer"><span class="footer-dot" aria-hidden="true"></span> Seus dados ficam sincronizados com o Firebase do seu projeto.</footer>
+  </div>
+
+  <dialog class="modal" id="card-dialog" aria-labelledby="card-dialog-title">
+    <form id="card-form">
+      <div class="modal-heading">
+        <div>
+          <p class="eyebrow">TAREFA</p>
+          <h2 id="card-dialog-title">Novo card</h2>
+        </div>
+        <button class="icon-button modal-close" type="button" data-close-dialog="card-dialog" aria-label="Fechar janela">×</button>
+      </div>
+      <label class="field-label" for="card-title">Título <span aria-hidden="true">*</span></label>
+      <input class="text-field" id="card-title" name="title" type="text" maxlength="120" required>
+      <label class="field-label" for="card-description">Descrição <span class="optional">(opcional)</span></label>
+      <textarea class="text-field textarea-field" id="card-description" name="description" rows="4" maxlength="1000"></textarea>
+      <div class="field-row">
+        <div class="field-group">
+          <label class="field-label" for="card-priority">Prioridade</label>
+          <select class="text-field" id="card-priority" name="priority">
+            <option value="baixa">Baixa</option>
+            <option value="media" selected>Média</option>
+            <option value="alta">Alta</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label class="field-label" for="card-due-date">Data de entrega <span class="optional">(opcional)</span></label>
+          <input class="text-field" id="card-due-date" name="dueDate" type="date">
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="button button-quiet" type="button" data-close-dialog="card-dialog">Cancelar</button>
+        <button class="button button-primary" type="submit">Salvar card</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="modal compact-modal" id="column-dialog" aria-labelledby="column-dialog-title">
+    <form id="column-form">
+      <div class="modal-heading">
+        <div>
+          <p class="eyebrow">ORGANIZAÇÃO</p>
+          <h2 id="column-dialog-title">Nova coluna</h2>
+        </div>
+        <button class="icon-button modal-close" type="button" data-close-dialog="column-dialog" aria-label="Fechar janela">×</button>
+      </div>
+      <label class="field-label" for="column-title">Nome da coluna <span aria-hidden="true">*</span></label>
+      <input class="text-field" id="column-title" name="title" type="text" maxlength="40" required>
+      <div class="modal-actions">
+        <button class="button button-quiet" type="button" data-close-dialog="column-dialog">Cancelar</button>
+        <button class="button button-primary" type="submit">Salvar coluna</button>
+      </div>
+    </form>
+  </dialog>
+</body>
+</html>
