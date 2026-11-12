@@ -56,7 +56,9 @@ service cloud.firestore {
       allow create: if signedIn() &&
         request.resource.data.id == boardId &&
         request.resource.data.ownerId == request.auth.uid;
-      allow read: if isMember(boardId);
+      allow get: if isMember(boardId) ||
+        (signedIn() && boardId == request.auth.uid);
+      allow list: if isMember(boardId);
       allow update: if isOwner(boardId) &&
         request.resource.data.ownerId == resource.data.ownerId &&
         request.resource.data.id == resource.data.id;

@@ -34,7 +34,7 @@ async function initializeFirebase() {
     return;
   }
 
-  const [{ initializeApp }, { getAuth }, { getFirestore }] = await Promise.all([
+  const [{ initializeApp }, { getAuth }, { initializeFirestore }] = await Promise.all([
     import(FIREBASE_MODULES.app),
     import(FIREBASE_MODULES.auth),
     import(FIREBASE_MODULES.firestore)
@@ -42,7 +42,7 @@ async function initializeFirebase() {
 
   const app = initializeApp(firebaseConfig);
   auth = getAuth(app);
-  db = getFirestore(app);
+  db = initializeFirestore(app, { experimentalForceLongPolling: true });
 }
 
 if (firebaseReady) {
