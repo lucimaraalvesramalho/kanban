@@ -54,7 +54,7 @@ if (firebaseReady) {
   console.warn("Firebase não está configurado. Atualize firebase-config.js para usar autenticação e Firestore.");
 }
 
-async function ensureFirebaseInitialized() {
+export async function ensureFirebaseInitialized() {
   if (!firebaseReady || !initializationPromise) {
     throw new Error("Firebase não configurado.");
   }
@@ -63,6 +63,11 @@ async function ensureFirebaseInitialized() {
   if (!firebaseReady || !auth || !db) {
     throw new Error("Não foi possível inicializar o Firebase. Verifique a configuração e a conexão.");
   }
+}
+
+export async function getFirestoreApi() {
+  await ensureFirebaseInitialized();
+  return import(FIREBASE_MODULES.firestore);
 }
 
 export async function createUserWithEmailAndPassword(email, password) {

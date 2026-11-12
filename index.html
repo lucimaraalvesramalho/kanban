@@ -46,6 +46,7 @@
           <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6m4-6v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>
           <span>Limpar board</span>
         </button>
+        <button class="button button-quiet" id="share-board" type="button" hidden>Compartilhar</button>
         <button class="button button-quiet" id="sign-out" type="button">Sair</button>
         <button class="icon-button theme-toggle" id="theme-toggle" type="button" aria-label="Ativar tema escuro" title="Alternar tema">
           <svg class="moon-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M20.2 15.1A8.5 8.5 0 0 1 8.9 3.8 8.5 8.5 0 1 0 20.2 15.1Z"/></svg>
@@ -65,6 +66,20 @@
           <span class="plus-icon" aria-hidden="true">+</span>
           Novo card
         </button>
+      </section>
+
+      <section class="board-navigation" aria-label="Seus quadros">
+        <div class="board-group">
+          <div class="board-group-heading">
+            <h2>Meus quadros</h2>
+            <button class="button button-quiet board-create-button" id="create-board" type="button">+ Novo quadro</button>
+          </div>
+          <div class="board-list" id="owned-boards"></div>
+        </div>
+        <div class="board-group">
+          <h2>Compartilhados comigo</h2>
+          <div class="board-list" id="shared-boards"></div>
+        </div>
       </section>
 
       <section class="toolbar" aria-label="Filtros do board">
@@ -143,6 +158,59 @@
         <button class="button button-primary" type="submit">Salvar coluna</button>
       </div>
     </form>
+  </dialog>
+
+  <dialog class="modal compact-modal" id="new-board-dialog" aria-labelledby="new-board-dialog-title">
+    <form id="new-board-form">
+      <div class="modal-heading">
+        <div>
+          <p class="eyebrow">ORGANIZAÇÃO</p>
+          <h2 id="new-board-dialog-title">Novo quadro</h2>
+        </div>
+        <button class="icon-button modal-close" type="button" data-close-dialog="new-board-dialog" aria-label="Fechar janela">×</button>
+      </div>
+      <label class="field-label" for="new-board-name">Nome do quadro <span aria-hidden="true">*</span></label>
+      <input class="text-field" id="new-board-name" name="name" type="text" maxlength="80" required>
+      <div class="modal-actions">
+        <button class="button button-quiet" type="button" data-close-dialog="new-board-dialog">Cancelar</button>
+        <button class="button button-primary" type="submit">Criar quadro</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="modal share-modal" id="share-dialog" aria-labelledby="share-dialog-title">
+    <div class="modal-heading">
+      <div>
+        <p class="eyebrow">ACESSO AO QUADRO</p>
+        <h2 id="share-dialog-title">Compartilhar quadro</h2>
+      </div>
+      <button class="icon-button modal-close" type="button" data-close-dialog="share-dialog" aria-label="Fechar janela">×</button>
+    </div>
+    <form id="invite-form" class="invite-form">
+      <label class="field-label" for="invite-email">E-mail da pessoa</label>
+      <input class="text-field" id="invite-email" name="email" type="email" autocomplete="off" required>
+      <div class="invite-role-row">
+        <label class="field-label" for="invite-role">Papel</label>
+        <select class="text-field" id="invite-role" name="role">
+          <option value="EDITOR">Editor</option>
+          <option value="VIEWER">Leitor</option>
+        </select>
+        <button class="button button-primary" type="submit">Convidar</button>
+      </div>
+      <p class="share-hint">O convite fica pendente até a pessoa entrar ou criar uma conta com este e-mail.</p>
+      <p id="share-feedback" class="auth-feedback" role="status" aria-live="polite"></p>
+    </form>
+    <section class="share-section" aria-labelledby="members-title">
+      <h3 id="members-title">Membros</h3>
+      <div id="members-list" class="share-list"></div>
+    </section>
+    <section class="share-section" aria-labelledby="invites-title">
+      <h3 id="invites-title">Convites pendentes</h3>
+      <div id="invites-list" class="share-list"></div>
+    </section>
+    <div class="modal-actions">
+      <button class="button button-danger" id="delete-board" type="button">Excluir quadro</button>
+    </div>
   </dialog>
 </body>
 </html>

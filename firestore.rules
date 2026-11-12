@@ -1,8 +1,172 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function boardPath(boardId) {
+      return /databases/$(database)/documents/boards/$(boardId);
+    }
+
+    function memberPath(boardId, userId) {
+      return /databases/$(database)/documents/boards/$(boardId)/members/$(userId);
+    }
+
+    function invitePath(boardId, inviteId) {
+      return /databases/$(database)/documents/boards/$(boardId)/invites/$(inviteId);
+    }
+
+    function isOwner(boardId) {
+      return signedIn() &&
+        exists(boardPath(boardId)) &&
+        get(boardPath(boardId)).data.ownerId == request.auth.uid;
+    }
+
+    function isMember(boardId) {
+      return signedIn() &&
+        exists(memberPath(boardId, request.auth.uid)) &&
+        get(memberPath(boardId, request.auth.uid)).data.userId == request.auth.uid;
+    }
+
+    function hasEditorAccess(boardId) {
+      return isMember(boardId) &&
+        get(memberPath(boardId, request.auth.uid)).data.role in ['OWNER', 'EDITOR'];
+    }
+
+    function validTask(boardId, taskId) {
+      return request.resource.data.id == taskId &&
+        request.resource.data.boardId == boardId &&
+        request.resource.data.title is string &&
+        request.resource.data.description is string &&
+        request.resource.data.priority in ['baixa', 'media', 'alta'] &&
+        request.resource.data.dueDate is string &&
+        (request.resource.data.assigneeId == null ||
+          exists(memberPath(boardId, request.resource.data.assigneeId)));
+    }
+
+    function isInvitee(boardId) {
+      return signedIn() &&
+        resource.data.email == request.auth.token.email &&
+        resource.data.status == 'PENDING' &&
+        resource.data.boardId == boardId;
+    }
+
+    match /boards/{boardId} {
+      allow create: if signedIn() &&
+        request.resource.data.id == boardId &&
+        request.resource.data.ownerId == request.auth.uid;
+      allow read: if isMember(boardId);
+      allow update: if isOwner(boardId) &&
+        request.resource.data.ownerId == resource.data.ownerId &&
+        request.resource.data.id == resource.data.id;
+      allow delete: if isOwner(boardId);
+
+      match /members/{userId} {
+        allow read: if isOwner(boardId) ||
+          (signedIn() && userId == request.auth.uid && resource.data.userId == request.auth.uid);
+        allow create: if
+          (signedIn() &&
+            userId == request.auth.uid &&
+            request.resource.data.userId == request.auth.uid &&
+            request.resource.data.email == request.auth.token.email &&
+            request.resource.data.role == 'OWNER' &&
+            request.resource.data.boardId == boardId &&
+            request.resource.data.ownerId == request.auth.uid &&
+            getAfter(boardPath(boardId)).data.ownerId == request.auth.uid) ||
+          (signedIn() &&
+            userId == request.auth.uid &&
+            request.resource.data.userId == request.auth.uid &&
+            request.resource.data.email == request.auth.token.email &&
+            request.resource.data.role in ['EDITOR', 'VIEWER'] &&
+            request.resource.data.boardId == boardId &&
+            request.resource.data.inviteId is string &&
+            existsAfter(invitePath(boardId, request.resource.data.inviteId)) &&
+            getAfter(invitePath(boardId, request.resource.data.inviteId)).data.status == 'ACCEPTED' &&
+            getAfter(invitePath(boardId, request.resource.data.inviteId)).data.email == request.auth.token.email &&
+            getAfter(invitePath(boardId, request.resource.data.inviteId)).data.role == request.resource.data.role &&
+            get(boardPath(boardId)).data.ownerId == request.resource.data.ownerId);
+        allow update: if
+          (isOwner(boardId) &&
+            userId != get(boardPath(boardId)).data.ownerId &&
+            request.resource.data.userId == resource.data.userId &&
+            request.resource.data.role in ['EDITOR', 'VIEWER'] &&
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role', 'updatedAt']));
+        allow delete: if isOwner(boardId) &&
+          (userId != get(boardPath(boardId)).data.ownerId ||
+            !existsAfter(boardPath(boardId)));
+      }
+
+      match /invites/{inviteId} {
+        allow get: if isOwner(boardId) || isInvitee(boardId);
+        allow list: if isOwner(boardId) ||
+          (signedIn() && resource.data.email == request.auth.token.email);
+        allow create: if isOwner(boardId) &&
+          request.resource.data.boardId == boardId &&
+          request.resource.data.ownerId == get(boardPath(boardId)).data.ownerId &&
+          request.resource.data.invitedBy == request.auth.uid &&
+          request.resource.data.email is string &&
+          request.resource.data.role in ['EDITOR', 'VIEWER'] &&
+          request.resource.data.status == 'PENDING' &&
+          request.resource.data.createdAt == request.time;
+        allow update: if
+          (isOwner(boardId) &&
+            resource.data.status == 'PENDING' &&
+            request.resource.data.email == resource.data.email &&
+            request.resource.data.boardId == resource.data.boardId &&
+            request.resource.data.ownerId == resource.data.ownerId &&
+            request.resource.data.role in ['EDITOR', 'VIEWER'] &&
+            request.resource.data.status in ['PENDING', 'REVOKED'] &&
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role', 'status', 'updatedAt'])) ||
+          (isInvitee(boardId) &&
+            request.resource.data.email == resource.data.email &&
+            request.resource.data.boardId == resource.data.boardId &&
+            request.resource.data.role == resource.data.role &&
+            request.resource.data.status == 'ACCEPTED' &&
+            request.resource.data.acceptedBy == request.auth.uid &&
+            request.resource.data.ownerId == resource.data.ownerId &&
+            request.resource.data.invitedBy == resource.data.invitedBy &&
+            request.resource.data.boardName == resource.data.boardName &&
+            request.resource.data.createdAt == resource.data.createdAt &&
+            request.resource.data.acceptedAt == request.time &&
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'acceptedBy', 'acceptedAt']));
+        allow delete: if isOwner(boardId);
+      }
+
+      match /tasks/{taskId} {
+        allow read: if isMember(boardId);
+        allow create, update: if hasEditorAccess(boardId) && validTask(boardId, taskId);
+        allow delete: if isOwner(boardId);
+
+        match /comments/{commentId} {
+          allow read: if isMember(boardId);
+          allow create: if hasEditorAccess(boardId) &&
+            request.resource.data.authorId == request.auth.uid &&
+            request.resource.data.text is string &&
+            request.resource.data.text.size() > 0 &&
+            request.resource.data.createdAt == request.time &&
+            request.resource.data.updatedAt == request.time;
+          allow update, delete: if hasEditorAccess(boardId) &&
+            (resource.data.authorId == request.auth.uid || isOwner(boardId));
+        }
+      }
+    }
+
+    match /{path=**}/members/{userId} {
+      allow get, list: if signedIn() &&
+        resource.data.userId == request.auth.uid;
+    }
+
+    match /{path=**}/invites/{inviteId} {
+      allow get: if signedIn() &&
+        resource.data.email == request.auth.token.email &&
+        resource.data.status == 'PENDING';
+      allow list: if signedIn() &&
+        resource.data.email == request.auth.token.email;
+    }
+
     match /users/{userId}/kanban/{document=**} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read, write: if signedIn() && request.auth.uid == userId;
     }
   }
 }

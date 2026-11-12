@@ -34,6 +34,7 @@
 }
 
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 
 body {
   min-width: 320px;
@@ -166,6 +167,16 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 
 main { padding-top: 40px; }
 .page-heading { display: flex; justify-content: space-between; align-items: end; gap: 20px; }
+.board-navigation { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 24px; }
+.board-group { min-width: 0; padding: 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
+.board-group > h2, .board-group-heading h2 { margin: 0; font-size: 12px; }
+.board-group-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.board-create-button { min-height: 32px; padding: 0 9px; font-size: 11px; }
+.board-list { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 11px; }
+.board-list:empty::after { color: var(--muted); content: "Nenhum quadro"; font-size: 11px; }
+.board-link { min-height: 32px; padding: 0 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface-soft); color: var(--muted); cursor: pointer; font-size: 11px; }
+.board-link:hover, .board-link.is-active { border-color: var(--primary); color: var(--primary); }
+.board-role { margin-left: 5px; color: var(--muted); font-size: 9px; }
 .eyebrow { margin: 0 0 8px; color: var(--primary); font-size: 10px; font-weight: 700; letter-spacing: 1.25px; }
 h1, h2 { font-family: "Segoe UI", Arial, sans-serif; }
 h1 { margin: 0; font-size: clamp(26px, 3vw, 34px); line-height: 1.2; letter-spacing: -1.2px; }
@@ -225,6 +236,22 @@ h1 { margin: 0; font-size: clamp(26px, 3vw, 34px); line-height: 1.2; letter-spac
 .modal::backdrop { background: rgb(20 23 37 / 48%); backdrop-filter: blur(2px); }
 .modal form { display: flex; flex-direction: column; }
 .compact-modal { width: min(420px, calc(100% - 32px)); }
+.share-modal { width: min(560px, calc(100% - 32px)); }
+.invite-form { display: flex; flex-direction: column; }
+.invite-role-row { display: grid; grid-template-columns: auto minmax(100px, 1fr) auto; align-items: start; gap: 9px; }
+.invite-role-row .field-label { padding-top: 13px; }
+.invite-role-row .text-field { margin-bottom: 0; }
+.share-hint { margin: 8px 0 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.share-section { margin-top: 19px; }
+.share-section h3 { margin: 0 0 9px; font-size: 13px; }
+.share-list { display: flex; flex-direction: column; gap: 8px; }
+.share-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 9px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface-soft); }
+.share-person { min-width: 0; overflow-wrap: anywhere; font-size: 12px; }
+.share-actions { display: flex; align-items: center; gap: 7px; }
+.share-actions select { min-height: 32px; padding: 0 7px; border: 1px solid var(--border); border-radius: 7px; background: var(--surface); color: var(--text); font-size: 11px; }
+.share-empty { margin: 0; color: var(--muted); font-size: 11px; }
+.button-danger { background: transparent; color: var(--danger); }
+.button-danger:hover { background: var(--surface-soft); }
 .modal-heading { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 21px; }
 .modal-heading .eyebrow { margin-bottom: 5px; }
 .modal-heading h2 { margin: 0; font-size: 21px; letter-spacing: -.5px; }
@@ -250,6 +277,7 @@ h1 { margin: 0; font-size: clamp(26px, 3vw, 34px); line-height: 1.2; letter-spac
   .app-shell { padding: 0 18px; }
   .topbar { height: 68px; }
   .topbar-actions { gap: 4px; }
+  .topbar-actions #share-board { width: auto; padding: 0 8px; font-size: 10px; }
   .topbar .button { width: 38px; min-height: 38px; padding: 0; }
   .topbar .button span { display: none; }
   main { padding-top: 29px; }
@@ -257,6 +285,10 @@ h1 { margin: 0; font-size: clamp(26px, 3vw, 34px); line-height: 1.2; letter-spac
   .page-heading > .button { flex: 0 0 auto; min-height: 39px; padding: 0 11px; font-size: 11px; }
   .subtitle { max-width: 240px; font-size: 12px; line-height: 1.5; }
   .toolbar { gap: 8px; margin: 22px 0 17px; }
+  .board-navigation { grid-template-columns: 1fr; gap: 10px; margin-top: 18px; }
+  .invite-role-row { grid-template-columns: 1fr 1fr; }
+  .invite-role-row .field-label { grid-column: 1 / -1; padding-top: 0; margin-bottom: -6px; }
+  .invite-role-row .button { grid-column: 1 / -1; }
   .search-box { flex: 1; min-width: 0; }
   .priority-filter { gap: 5px; padding: 0 8px; }
   .priority-filter > span { display: none; }
