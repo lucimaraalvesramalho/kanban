@@ -722,6 +722,10 @@ function appendShareEmpty(container, message) {
   container.replaceChildren(makeElement("p", "share-empty", message));
 }
 
+function getRoleLabel(role) {
+  return { OWNER: "Dono", EDITOR: "Editor", VIEWER: "Leitor" }[role] || "Leitor";
+}
+
 async function refreshShareLists() {
   if (!canManageMembers() || !activeBoard) return;
 
@@ -742,12 +746,13 @@ async function refreshShareLists() {
         row.append(makeElement("span", "share-person", member.email || member.userId));
         const actions = makeElement("div", "share-actions");
 
-        if (member.role === "OWNER") {
-          actions.append(makeElement("span", "board-role", "Dono"));
+        if (memberSnapshot.id === currentUser.uid) {
+          actions.append(makeElement("span", "board-role", `${getRoleLabel(member.role)} (você)`));
         } else {
           const roleSelect = makeElement("select", "");
           roleSelect.setAttribute("aria-label", `Papel de ${member.email || member.userId}`);
           [
+            ["OWNER", "Dono (acesso completo)"],
             ["EDITOR", "Editor"],
             ["VIEWER", "Leitor"]
           ].forEach(([value, label]) => {
@@ -772,7 +777,8 @@ async function refreshShareLists() {
           const removeButton = makeElement("button", "button button-quiet", "Remover");
           removeButton.type = "button";
           removeButton.addEventListener("click", async () => {
-            if (!window.confirm(`Remover o acesso de ${member.email || member.userId}?`)) return;
+            const accessLevel = member.role === "OWNER" ? " e os poderes de dono" : "";
+            if (!window.confirm(`Remover o acesso${accessLevel} de ${member.email || member.userId}?`)) return;
             try {
               await firestore.deleteDoc(memberSnapshot.ref);
               setShareFeedback("Acesso removido.", false);
@@ -800,7 +806,7 @@ async function refreshShareLists() {
         const row = makeElement("div", "share-row");
         row.append(makeElement("span", "share-person", invite.email));
         const actions = makeElement("div", "share-actions");
-        actions.append(makeElement("span", "board-role", invite.role === "EDITOR" ? "Editor" : "Leitor"));
+        actions.append(makeElement("span", "board-role", getRoleLabel(invite.role)));
         const cancelButton = makeElement("button", "button button-quiet", "Cancelar");
         cancelButton.type = "button";
         cancelButton.addEventListener("click", async () => {
@@ -838,12 +844,12 @@ async function createInvitation(event) {
 
   const email = ui.inviteEmail.value.trim().toLowerCase();
   const role = ui.inviteRole.value;
-  if (!email || !["EDITOR", "VIEWER"].includes(role)) {
+  if (!email || !["OWNER", "EDITOR", "VIEWER"].includes(role)) {
     setShareFeedback("Informe um e-mail válido e um papel permitido.", true);
     return;
   }
   if (currentUser.email && email.toLowerCase() === currentUser.email.toLowerCase()) {
-    setShareFeedback("Você já é o dono deste quadro.", true);
+    setShareFeedback("Você já tem acesso a este quadro.", true);
     return;
   }
 
@@ -882,7 +888,10 @@ async function createInvitation(event) {
       createdAt: firestore.serverTimestamp()
     });
     ui.inviteForm.reset();
-    setShareFeedback(`Convite registrado para ${email}. Se a pessoa ainda não tiver conta, ele ficará pendente até ela entrar com esse e-mail.`, false);
+    const roleMessage = role === "OWNER"
+      ? " A pessoa terá acesso completo, incluindo gerenciar membros e excluir o quadro."
+      : "";
+    setShareFeedback(`Convite registrado para ${email}. Se a pessoa ainda não tiver conta, ele ficará pendente até ela entrar com esse e-mail.${roleMessage}`, false);
     await refreshShareLists();
   } catch (error) {
     setShareFeedback("Não foi possível criar o convite. Verifique se você é o dono do quadro.", true);

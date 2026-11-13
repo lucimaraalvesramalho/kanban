@@ -20,7 +20,9 @@ service cloud.firestore {
     function isOwner(boardId) {
       return signedIn() &&
         exists(boardPath(boardId)) &&
-        get(boardPath(boardId)).data.ownerId == request.auth.uid;
+        exists(memberPath(boardId, request.auth.uid)) &&
+        get(memberPath(boardId, request.auth.uid)).data.userId == request.auth.uid &&
+        get(memberPath(boardId, request.auth.uid)).data.role == 'OWNER';
     }
 
     function isMember(boardId) {
@@ -80,7 +82,7 @@ service cloud.firestore {
             userId == request.auth.uid &&
             request.resource.data.userId == request.auth.uid &&
             request.resource.data.email == request.auth.token.email &&
-            request.resource.data.role in ['EDITOR', 'VIEWER'] &&
+            request.resource.data.role in ['OWNER', 'EDITOR', 'VIEWER'] &&
             request.resource.data.boardId == boardId &&
             request.resource.data.inviteId is string &&
             existsAfter(invitePath(boardId, request.resource.data.inviteId)) &&
@@ -90,12 +92,12 @@ service cloud.firestore {
             get(boardPath(boardId)).data.ownerId == request.resource.data.ownerId);
         allow update: if
           (isOwner(boardId) &&
-            userId != get(boardPath(boardId)).data.ownerId &&
+            userId != request.auth.uid &&
             request.resource.data.userId == resource.data.userId &&
-            request.resource.data.role in ['EDITOR', 'VIEWER'] &&
+            request.resource.data.role in ['OWNER', 'EDITOR', 'VIEWER'] &&
             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role', 'updatedAt']));
         allow delete: if isOwner(boardId) &&
-          (userId != get(boardPath(boardId)).data.ownerId ||
+          (userId != request.auth.uid ||
             !existsAfter(boardPath(boardId)));
       }
 
@@ -108,7 +110,7 @@ service cloud.firestore {
           request.resource.data.ownerId == get(boardPath(boardId)).data.ownerId &&
           request.resource.data.invitedBy == request.auth.uid &&
           request.resource.data.email is string &&
-          request.resource.data.role in ['EDITOR', 'VIEWER'] &&
+          request.resource.data.role in ['OWNER', 'EDITOR', 'VIEWER'] &&
           request.resource.data.status == 'PENDING' &&
           request.resource.data.createdAt == request.time;
         allow update: if
@@ -117,7 +119,7 @@ service cloud.firestore {
             request.resource.data.email == resource.data.email &&
             request.resource.data.boardId == resource.data.boardId &&
             request.resource.data.ownerId == resource.data.ownerId &&
-            request.resource.data.role in ['EDITOR', 'VIEWER'] &&
+            request.resource.data.role in ['OWNER', 'EDITOR', 'VIEWER'] &&
             request.resource.data.status in ['PENDING', 'REVOKED'] &&
             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role', 'status', 'updatedAt'])) ||
           (isInvitee(boardId) &&
