@@ -89,7 +89,7 @@ service cloud.firestore {
             getAfter(invitePath(boardId, request.resource.data.inviteId)).data.status == 'ACCEPTED' &&
             getAfter(invitePath(boardId, request.resource.data.inviteId)).data.email == request.auth.token.email &&
             getAfter(invitePath(boardId, request.resource.data.inviteId)).data.role == request.resource.data.role &&
-            get(boardPath(boardId)).data.ownerId == request.resource.data.ownerId);
+            getAfter(boardPath(boardId)).data.ownerId == request.resource.data.ownerId);
         allow update: if
           (isOwner(boardId) &&
             userId != request.auth.uid &&

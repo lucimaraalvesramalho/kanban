@@ -451,7 +451,12 @@ function handleAuthenticatedUser(user) {
       if (acceptedCount) setShareFeedback(`${acceptedCount} convite(s) aceito(s).`, false);
     })
     .catch((error) => {
-      showOperationError("Não foi possível carregar seus quadros. Verifique as regras e a configuração do Firestore.", error);
+      const code = error?.code ? `\nCódigo: ${error.code}` : "";
+      const detail = error?.message ? `\nDetalhe: ${error.message}` : "";
+      showOperationError(
+        `Não foi possível carregar seus quadros.${code}${detail}`,
+        error
+      );
     });
 }
 
