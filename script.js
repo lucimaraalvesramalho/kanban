@@ -9,6 +9,7 @@ import {
   signOutUser
 } from "./firebase.js";
 import { migrateCurrentUserBoard } from "./firebase-migrations.js";
+import aiConfig from "./ai-config.js";
 
 const THEME_KEY = "meu-kanban-theme-v1";
 const PRIORITIES = ["baixa", "media", "alta"];
@@ -26,6 +27,9 @@ let persistedTaskIdsByBoard = new Map();
 let boardSelectionId = 0;
 let unsubscribeMembership = null;
 let saveQueue = Promise.resolve();
+let aiMessages = [];
+let aiBoardId = null;
+let aiRequestId = null;
 
 const board = document.querySelector("#board");
 const cardDialog = document.querySelector("#card-dialog");
@@ -57,6 +61,10 @@ const ui = {
   cardDescription: document.querySelector("#card-description"),
   cardPriority: document.querySelector("#card-priority"),
   cardDueDate: document.querySelector("#card-due-date"),
+  cardChecklistSection: document.querySelector("#card-checklist-section"),
+  cardChecklist: document.querySelector("#card-checklist"),
+  generateSubtasks: document.querySelector("#generate-subtasks"),
+  subtaskFeedback: document.querySelector("#subtask-feedback"),
   columnForm: document.querySelector("#column-form"),
   columnTitle: document.querySelector("#column-title"),
   newBoardForm: document.querySelector("#new-board-form"),
@@ -67,7 +75,17 @@ const ui = {
   shareFeedback: document.querySelector("#share-feedback"),
   membersList: document.querySelector("#members-list"),
   invitesList: document.querySelector("#invites-list"),
-  deleteBoard: document.querySelector("#delete-board")
+  deleteBoard: document.querySelector("#delete-board"),
+  aiToggle: document.querySelector("#ai-toggle"),
+  aiPanel: document.querySelector("#ai-panel"),
+  aiClose: document.querySelector("#ai-close"),
+  aiForm: document.querySelector("#ai-form"),
+  aiQuestion: document.querySelector("#ai-question"),
+  aiSend: document.querySelector("#ai-send"),
+  aiFeedback: document.querySelector("#ai-feedback"),
+  aiWelcome: document.querySelector("#ai-welcome"),
+  aiConversation: document.querySelector("#ai-conversation"),
+  aiMessages: document.querySelector("#ai-messages")
 };
 
 function createId() {
@@ -96,6 +114,196 @@ function canManageMembers() {
   return isOwner();
 }
 
+function aiApiUrl(path) {
+  return `${aiConfig.apiBaseUrl.replace(/\/+$/, "")}${path}`;
+}
+
+function resetAiConversation(boardId = null) {
+  if (aiBoardId === boardId) return;
+  aiBoardId = boardId;
+  aiMessages = [];
+  aiRequestId = null;
+  ui.aiPanel.hidden = true;
+  ui.aiPanel.setAttribute("aria-hidden", "true");
+  ui.aiToggle.setAttribute("aria-expanded", "false");
+  ui.aiQuestion.value = "";
+  ui.aiFeedback.textContent = "";
+  ui.aiSend.disabled = false;
+  ui.aiSend.textContent = "Enviar";
+  renderAiConversation();
+}
+
+function renderAiConversation() {
+  ui.aiMessages.replaceChildren();
+  aiMessages.forEach((message) => {
+    const element = makeElement(
+      "p",
+      `ai-message ai-message-${message.role}${message.error ? " is-error" : ""}${message.pending ? " is-pending" : ""}`,
+      message.text
+    );
+    element.setAttribute("aria-label", message.role === "user" ? "Sua pergunta" : "Resposta do assistente");
+    ui.aiMessages.append(element);
+  });
+  ui.aiWelcome.hidden = aiMessages.length > 0;
+  ui.aiConversation.scrollTop = ui.aiConversation.scrollHeight;
+}
+
+function setAiPanelOpen(open) {
+  const shouldOpen = Boolean(open && activeBoard);
+  ui.aiPanel.hidden = !shouldOpen;
+  ui.aiPanel.setAttribute("aria-hidden", String(!shouldOpen));
+  ui.aiToggle.setAttribute("aria-expanded", String(shouldOpen));
+  if (shouldOpen) ui.aiQuestion.focus();
+}
+
+async function sendAiQuestion(value) {
+  const question = value.trim();
+  if (!question || !activeBoard || !currentUser || aiRequestId) return;
+  if (question.length > 500) {
+    ui.aiFeedback.textContent = "A pergunta deve ter até 500 caracteres.";
+    return;
+  }
+
+  const boardId = activeBoard.boardId;
+  const requestId = createId();
+  const pendingMessage = { id: requestId, role: "assistant", text: "Pensando...", pending: true };
+  aiRequestId = requestId;
+  aiMessages.push({ id: createId(), role: "user", text: question }, pendingMessage);
+  ui.aiQuestion.value = "";
+  ui.aiFeedback.textContent = "";
+  ui.aiSend.disabled = true;
+  ui.aiSend.textContent = "Pensando...";
+  renderAiConversation();
+
+  try {
+    const token = await currentUser.getIdToken();
+    const response = await fetch(aiApiUrl("/api/ai/chat"), {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ boardId, pergunta: question })
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(
+        typeof result.error === "string"
+          ? result.error
+          : "Não foi possível responder agora. Tente novamente."
+      );
+    }
+    if (typeof result.resposta !== "string" || !result.resposta.trim()) {
+      throw new Error("O assistente retornou uma resposta vazia. Tente novamente.");
+    }
+    if (aiBoardId !== boardId || aiRequestId !== requestId) return;
+    pendingMessage.text = result.resposta;
+    pendingMessage.pending = false;
+  } catch (error) {
+    if (aiBoardId !== boardId || aiRequestId !== requestId) return;
+    pendingMessage.text = error instanceof TypeError
+      ? "Não foi possível conectar ao assistente. Verifique se o servidor está em execução e tente novamente."
+      : error.message || "Não foi possível responder agora. Tente novamente.";
+    pendingMessage.pending = false;
+    pendingMessage.error = true;
+  } finally {
+    if (aiRequestId === requestId) {
+      aiRequestId = null;
+      ui.aiSend.disabled = false;
+      ui.aiSend.textContent = "Enviar";
+      renderAiConversation();
+    }
+  }
+}
+
+function renderCardChecklist(card) {
+  ui.cardChecklist.replaceChildren();
+  const checklist = Array.isArray(card?.checklist) ? card.checklist : [];
+  if (!checklist.length) {
+    ui.cardChecklist.append(makeElement("li", "checklist-empty", "Nenhum item no checklist."));
+    return;
+  }
+
+  checklist.forEach((item, index) => {
+    const text = typeof item === "string"
+      ? item
+      : item && (item.text || item.title) || "Subtarefa";
+    const checked = Boolean(item && typeof item === "object" &&
+      (item.done === true || item.completed === true || item.checked === true));
+    const label = makeElement("label", "checklist-item");
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.checked = checked;
+    checkbox.addEventListener("change", () => {
+      const current = findCard(card.id);
+      if (!current) return;
+      const currentItem = current.checklist[index];
+      current.checklist[index] = typeof currentItem === "string"
+        ? { text: currentItem, done: checkbox.checked }
+        : { ...currentItem, done: checkbox.checked };
+      saveState();
+      renderBoard();
+    });
+    label.append(checkbox, makeElement("span", "", text));
+    ui.cardChecklist.append(label);
+  });
+}
+
+async function generateCardSubtasks() {
+  const cardId = ui.cardForm.dataset.cardId;
+  const card = cardId && findCard(cardId);
+  if (!canEditTasks() || !card || !activeBoard || !currentUser) return;
+
+  ui.generateSubtasks.disabled = true;
+  ui.generateSubtasks.textContent = "Gerando...";
+  ui.subtaskFeedback.textContent = "A IA está analisando a tarefa salva...";
+  ui.subtaskFeedback.classList.remove("error");
+
+  try {
+    const token = await currentUser.getIdToken();
+    const response = await fetch(
+      aiApiUrl(`/api/ai/tasks/${encodeURIComponent(cardId)}/subtasks`),
+      {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ boardId: activeBoard.boardId })
+      }
+    );
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(
+        typeof result.error === "string"
+          ? result.error
+          : "Não foi possível gerar as subtarefas."
+      );
+    }
+    if (
+      !Array.isArray(result.subtasks) ||
+      result.subtasks.length < 3 ||
+      result.subtasks.length > 8 ||
+      !Array.isArray(result.checklist)
+    ) {
+      throw new Error("A resposta do assistente veio em um formato inválido.");
+    }
+
+    card.checklist = result.checklist;
+    renderCardChecklist(card);
+    renderBoard();
+    ui.subtaskFeedback.textContent = `${result.subtasks.length} subtarefas adicionadas ao checklist.`;
+  } catch (error) {
+    ui.subtaskFeedback.textContent = error instanceof TypeError
+      ? "Não foi possível conectar ao assistente. Verifique se o servidor está em execução."
+      : error.message || "Não foi possível gerar as subtarefas.";
+    ui.subtaskFeedback.classList.add("error");
+  } finally {
+    ui.generateSubtasks.disabled = false;
+    ui.generateSubtasks.textContent = "Quebrar em subtasks";
+  }
+}
+
 function getBoardMembershipPath(boardId, userId) {
   return ["boards", boardId, "members", userId];
 }
@@ -116,6 +324,8 @@ function applyBoardPermissions() {
   ui.clearBoard.hidden = !owner;
   ui.addColumn.hidden = !owner;
   ui.shareBoard.hidden = !owner;
+  ui.aiToggle.hidden = !activeBoard;
+  ui.generateSubtasks.hidden = !editor || !ui.cardForm.dataset.cardId;
 }
 
 function renderBoardNavigation() {
@@ -182,6 +392,7 @@ async function selectBoard(membership) {
       ownerId: boardData.ownerId,
       role: membership.role
     };
+    resetAiConversation(activeBoard.boardId);
     state = nextState;
     persistedTaskIds = nextTaskIds;
     persistedTaskIdsByBoard.set(activeBoard.boardId, nextTaskIds);
@@ -208,6 +419,7 @@ function subscribeToBoardMembership(firestore, membership) {
     if (!activeBoard || activeBoard.boardId !== membership.boardId) return;
     if (!snapshot.exists()) {
       activeBoard = null;
+      resetAiConversation(null);
       state = { columns: [] };
       persistedTaskIds = new Set();
       memberships = memberships.filter((item) => item.boardId !== membership.boardId);
@@ -395,6 +607,7 @@ async function loadBoardList(user) {
 
   if (!memberships.length) {
     activeBoard = null;
+    resetAiConversation(null);
     state = { columns: [] };
     persistedTaskIds = new Set();
     ui.pageTitle.textContent = "Meu Kanban";
@@ -423,6 +636,7 @@ function handleAuthenticatedUser(user) {
   }
   currentUser = user;
   if (!user) {
+    resetAiConversation(null);
     activeBoard = null;
     memberships = [];
     persistedTaskIds = new Set();
@@ -435,6 +649,7 @@ function handleAuthenticatedUser(user) {
     return;
   }
 
+  resetAiConversation(null);
   activeBoard = null;
   memberships = [];
   persistedTaskIds = new Set();
@@ -571,6 +786,14 @@ function createCardElement(card, column) {
     dueDate.append(calendar, document.createTextNode(formatDate(card.dueDate)));
     meta.append(dueDate);
   }
+  if (Array.isArray(card.checklist) && card.checklist.length) {
+    const completed = card.checklist.filter((item) =>
+      item &&
+      typeof item === "object" &&
+      (item.done === true || item.completed === true || item.checked === true)
+    ).length;
+    meta.append(makeElement("span", "checklist-progress", `${completed}/${card.checklist.length} subtarefas`));
+  }
   element.append(meta);
 
   element.addEventListener("dragstart", (event) => {
@@ -667,6 +890,11 @@ function openCardDialog(cardId, columnId) {
   ui.cardDescription.value = card ? card.description : "";
   ui.cardPriority.value = card ? card.priority : "media";
   ui.cardDueDate.value = card ? card.dueDate : "";
+  ui.cardChecklistSection.hidden = !card;
+  ui.generateSubtasks.hidden = !card || !canEditTasks();
+  ui.subtaskFeedback.textContent = "";
+  ui.subtaskFeedback.classList.remove("error");
+  renderCardChecklist(card);
   cardDialog.showModal();
   ui.cardTitle.focus();
 }
@@ -1012,6 +1240,7 @@ async function deleteActiveBoard() {
 
     memberships = memberships.filter((member) => member.boardId !== boardId);
     activeBoard = null;
+    resetAiConversation(null);
     state = { columns: [] };
     renderBoardNavigation();
     if (memberships.length) {
@@ -1139,6 +1368,25 @@ function initializeBoardUi() {
   ui.newBoardForm.addEventListener("submit", createBoard);
   ui.inviteForm.addEventListener("submit", createInvitation);
   ui.deleteBoard.addEventListener("click", deleteActiveBoard);
+  ui.aiToggle.addEventListener("click", () => setAiPanelOpen(ui.aiPanel.hidden));
+  ui.aiClose.addEventListener("click", () => setAiPanelOpen(false));
+  ui.aiForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    sendAiQuestion(ui.aiQuestion.value);
+  });
+  ui.aiQuestion.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      ui.aiForm.requestSubmit();
+    }
+  });
+  document.querySelectorAll("[data-ai-question]").forEach((button) => {
+    button.addEventListener("click", () => sendAiQuestion(button.dataset.aiQuestion));
+  });
+  ui.generateSubtasks.addEventListener("click", generateCardSubtasks);
+  ui.aiPanel.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") setAiPanelOpen(false);
+  });
 
   document.querySelector("#theme-toggle").addEventListener("click", () => {
     const nextTheme = document.documentElement.dataset.theme === "dark" ? "light" : "dark";

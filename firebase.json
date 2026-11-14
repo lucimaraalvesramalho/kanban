@@ -2,5 +2,31 @@
   "firestore": {
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"
+  },
+  "hosting": {
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      "firestore.rules",
+      "firestore.indexes.json",
+      "package.json",
+      "package-lock.json",
+      ".env*",
+      "service-account*.json",
+      "*-firebase-adminsdk-*.json",
+      "server/**",
+      "tests/**",
+      "**/node_modules/**",
+      "**/.*"
+    ],
+    "rewrites": [
+      {
+        "source": "/api/**",
+        "run": {
+          "serviceId": "kanban-ai-api",
+          "region": "southamerica-east1"
+        }
+      }
+    ]
   }
 }

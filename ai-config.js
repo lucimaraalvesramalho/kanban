@@ -1,0 +1,8 @@
+const localHosts = new Set(["127.0.0.1", "localhost"]);
+const aiConfig = {
+  apiBaseUrl: localHosts.has(window.location.hostname)
+    ? "http://127.0.0.1:3000"
+    : ""
+};
+
+export default aiConfig;

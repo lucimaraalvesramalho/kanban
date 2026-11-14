@@ -42,6 +42,10 @@
         <span>meu<span class="brand-accent">kanban</span></span>
       </a>
       <div class="topbar-actions">
+        <button class="button button-quiet ai-toggle" id="ai-toggle" type="button" aria-label="Pergunte ao seu projeto" aria-expanded="false" aria-controls="ai-panel" hidden>
+          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H7l-4 2v-5.5A7.5 7.5 0 1 1 20 11.5Z"/><path d="M8 11h8m-8 3h5"/></svg>
+          <span>Pergunte ao seu projeto</span>
+        </button>
         <button class="button button-quiet" id="clear-board" type="button" aria-label="Limpar todos os cards do board">
           <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6m4-6v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>
           <span>Limpar board</span>
@@ -106,6 +110,35 @@
       </section>
     </main>
     <footer class="footer"><span class="footer-dot" aria-hidden="true"></span> Seus dados ficam sincronizados com o Firebase do seu projeto.</footer>
+
+    <aside class="ai-panel" id="ai-panel" aria-label="Pergunte ao seu projeto" aria-hidden="true" hidden>
+      <header class="ai-panel-header">
+        <div>
+          <p class="eyebrow">ASSISTENTE DO QUADRO</p>
+          <h2>Pergunte ao seu projeto</h2>
+        </div>
+        <button class="icon-button" id="ai-close" type="button" aria-label="Fechar assistente">×</button>
+      </header>
+      <div class="ai-conversation" id="ai-conversation">
+        <div class="ai-welcome" id="ai-welcome">
+          <p>Consulte o andamento deste quadro usando os cards reais.</p>
+          <div class="ai-suggestions" aria-label="Sugestões de perguntas">
+            <button class="ai-suggestion" type="button" data-ai-question="O que está travado?">O que está travado?</button>
+            <button class="ai-suggestion" type="button" data-ai-question="O que falta para lançar?">O que falta para lançar?</button>
+            <button class="ai-suggestion" type="button" data-ai-question="Quem tem mais tarefas?">Quem tem mais tarefas?</button>
+          </div>
+        </div>
+        <div class="ai-messages" id="ai-messages" role="log" aria-live="polite" aria-relevant="additions text"></div>
+      </div>
+      <form class="ai-form" id="ai-form">
+        <label class="sr-only" for="ai-question">Pergunte ao seu projeto</label>
+        <textarea id="ai-question" name="pergunta" maxlength="500" rows="3" placeholder="Pergunte ao seu projeto..." required></textarea>
+        <div class="ai-form-footer">
+          <p class="ai-feedback" id="ai-feedback" role="status" aria-live="polite"></p>
+          <button class="button button-primary" id="ai-send" type="submit">Enviar</button>
+        </div>
+      </form>
+    </aside>
   </div>
 
   <dialog class="modal" id="card-dialog" aria-labelledby="card-dialog-title">
@@ -135,6 +168,14 @@
           <input class="text-field" id="card-due-date" name="dueDate" type="date">
         </div>
       </div>
+      <section class="card-checklist-section" id="card-checklist-section" aria-labelledby="card-checklist-title" hidden>
+        <div class="checklist-heading">
+          <h3 id="card-checklist-title">Checklist</h3>
+          <button class="button button-quiet checklist-generate" id="generate-subtasks" type="button" hidden>Quebrar em subtasks</button>
+        </div>
+        <ul class="card-checklist" id="card-checklist"></ul>
+        <p class="subtask-feedback" id="subtask-feedback" role="status" aria-live="polite"></p>
+      </section>
       <div class="modal-actions">
         <button class="button button-quiet" type="button" data-close-dialog="card-dialog">Cancelar</button>
         <button class="button button-primary" type="submit">Salvar card</button>

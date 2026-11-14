@@ -223,6 +223,7 @@ h1 { margin: 0; font-size: clamp(26px, 3vw, 34px); line-height: 1.2; letter-spac
 :root[data-theme="dark"] .priority-baixa { background: #254237; color: #79d4a2; }
 .due-date { display: inline-flex; align-items: center; gap: 5px; color: var(--muted); font-size: 10px; }
 .due-date svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.checklist-progress { color: var(--muted); font-size: 10px; }
 .empty-column { padding: 14px 8px; color: var(--muted); font-size: 11px; text-align: center; }
 .add-task-inline { width: 100%; margin-top: 11px; padding: 8px; border: 0; border-radius: 7px; background: transparent; color: var(--muted); cursor: pointer; font-size: 12px; text-align: left; }
 .add-task-inline:hover { background: var(--surface); color: var(--primary); }
@@ -252,6 +253,56 @@ h1 { margin: 0; font-size: clamp(26px, 3vw, 34px); line-height: 1.2; letter-spac
 .share-empty { margin: 0; color: var(--muted); font-size: 11px; }
 .button-danger { background: transparent; color: var(--danger); }
 .button-danger:hover { background: var(--surface-soft); }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+
+.ai-panel {
+  position: fixed;
+  z-index: 20;
+  top: 16px;
+  right: 16px;
+  width: min(420px, calc(100vw - 32px));
+  height: min(760px, calc(100vh - 32px));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 20px 70px rgb(12 17 36 / 24%);
+}
+.ai-panel-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 19px 20px 15px; border-bottom: 1px solid var(--border); }
+.ai-panel-header .eyebrow { margin-bottom: 5px; }
+.ai-panel-header h2 { margin: 0; font-size: 18px; letter-spacing: -.4px; }
+.ai-conversation { min-height: 0; flex: 1; display: flex; flex-direction: column; overflow-y: auto; padding: 16px; }
+.ai-welcome > p { margin: 0 0 13px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.ai-suggestions { display: flex; flex-wrap: wrap; gap: 7px; }
+.ai-suggestion { padding: 8px 10px; border: 1px solid var(--border); border-radius: 18px; background: var(--surface-soft); color: var(--text); cursor: pointer; font-size: 11px; text-align: left; }
+.ai-suggestion:hover { border-color: var(--primary); color: var(--primary); }
+.ai-messages { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+.ai-message { max-width: 90%; margin: 0; padding: 10px 12px; border-radius: 12px; font-size: 12px; line-height: 1.55; overflow-wrap: anywhere; white-space: pre-wrap; }
+.ai-message-user { align-self: flex-end; background: var(--primary); color: #fff; }
+.ai-message-assistant { align-self: flex-start; border: 1px solid var(--border); background: var(--surface-soft); }
+.ai-message.is-pending { color: var(--muted); font-style: italic; }
+.ai-message.is-error { border-color: color-mix(in srgb, var(--danger) 45%, var(--border)); color: var(--danger); }
+.ai-form { padding: 13px 16px 16px; border-top: 1px solid var(--border); }
+.ai-form textarea { width: 100%; min-height: 76px; resize: vertical; padding: 10px 11px; border: 1px solid var(--border); border-radius: 9px; background: var(--surface-soft); color: var(--text); font-size: 12px; line-height: 1.5; }
+.ai-form textarea::placeholder { color: var(--muted); }
+.ai-form-footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 9px; }
+.ai-feedback { flex: 1; margin: 0; color: var(--muted); font-size: 11px; }
+.ai-form-footer .button { min-height: 36px; }
+.ai-form-footer .button:disabled, .checklist-generate:disabled { opacity: .65; cursor: wait; transform: none; }
+
+.card-checklist-section { margin: 0 0 14px; }
+.checklist-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.checklist-heading h3 { margin: 0; font-size: 13px; }
+.checklist-generate { min-height: 32px; padding: 0 9px; font-size: 11px; }
+.card-checklist { display: flex; flex-direction: column; gap: 7px; margin: 0; padding: 0; list-style: none; }
+.checklist-item { display: flex; align-items: flex-start; gap: 8px; color: var(--text); font-size: 12px; line-height: 1.5; }
+.checklist-item input { margin-top: 2px; accent-color: var(--primary); }
+.checklist-empty { color: var(--muted); font-size: 11px; }
+.subtask-feedback { min-height: 16px; margin: 8px 0 0; color: var(--muted); font-size: 11px; line-height: 1.4; }
+.subtask-feedback.error { color: var(--danger); }
 .modal-heading { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 21px; }
 .modal-heading .eyebrow { margin-bottom: 5px; }
 .modal-heading h2 { margin: 0; font-size: 21px; letter-spacing: -.5px; }
