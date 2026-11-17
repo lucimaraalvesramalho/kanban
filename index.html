@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+  <!-- Metadados básicos e recursos visuais e de comportamento da página. -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#f5f6fa">
@@ -10,6 +11,7 @@
   <script type="module" src="script.js"></script>
 </head>
 <body>
+  <!-- Tela apresentada enquanto o usuário não está autenticado. -->
   <div id="auth-screen" class="auth-screen">
     <div class="auth-card">
       <div class="brand" aria-label="Meu Kanban — autenticação">
@@ -35,7 +37,9 @@
     </div>
   </div>
 
+  <!-- Interface principal exibida depois da autenticação. -->
   <div id="app-shell" class="app-shell hidden">
+    <!-- Barra superior com navegação, ações do quadro e troca de tema. -->
     <header class="topbar">
       <a class="brand" href="#" aria-label="Meu Kanban — início">
         <span class="brand-mark" aria-hidden="true">K</span>
@@ -60,6 +64,7 @@
     </header>
 
     <main>
+      <!-- Cabeçalho da página e ação principal para criar tarefas. -->
       <section class="page-heading" aria-labelledby="page-title">
         <div>
           <p class="eyebrow">SEU ESPAÇO DE TRABALHO</p>
@@ -72,6 +77,7 @@
         </button>
       </section>
 
+      <!-- Seleção dos quadros próprios e compartilhados com o usuário. -->
       <section class="board-navigation" aria-label="Seus quadros">
         <div class="board-group">
           <div class="board-group-heading">
@@ -86,6 +92,7 @@
         </div>
       </section>
 
+      <!-- Controles usados para filtrar cards exibidos no quadro. -->
       <section class="toolbar" aria-label="Filtros do board">
         <label class="search-box" for="search-input">
           <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/></svg>
@@ -102,6 +109,7 @@
         </label>
       </section>
 
+      <!-- Área onde as colunas e os cards do quadro são renderizados. -->
       <section class="board-wrap" aria-label="Quadro Kanban">
         <div class="board" id="board" aria-live="polite"></div>
         <button class="add-column-button" id="add-column" type="button">
@@ -109,8 +117,10 @@
         </button>
       </section>
     </main>
+    <!-- Informativo de sincronização dos dados. -->
     <footer class="footer"><span class="footer-dot" aria-hidden="true"></span> Seus dados ficam sincronizados com o Firebase do seu projeto.</footer>
 
+    <!-- Painel lateral com conversas do assistente de IA. -->
     <aside class="ai-panel" id="ai-panel" aria-label="Pergunte ao seu projeto" aria-hidden="true" hidden>
       <header class="ai-panel-header">
         <div>
@@ -141,6 +151,7 @@
     </aside>
   </div>
 
+  <!-- Modal de criação e edição de cards. -->
   <dialog class="modal" id="card-dialog" aria-labelledby="card-dialog-title">
     <form id="card-form">
       <div class="modal-heading">
@@ -183,6 +194,7 @@
     </form>
   </dialog>
 
+  <!-- Modal de criação e edição de colunas. -->
   <dialog class="modal compact-modal" id="column-dialog" aria-labelledby="column-dialog-title">
     <form id="column-form">
       <div class="modal-heading">
@@ -201,6 +213,7 @@
     </form>
   </dialog>
 
+  <!-- Modal usado para criar um novo quadro. -->
   <dialog class="modal compact-modal" id="new-board-dialog" aria-labelledby="new-board-dialog-title">
     <form id="new-board-form">
       <div class="modal-heading">
@@ -219,6 +232,7 @@
     </form>
   </dialog>
 
+  <!-- Modal de compartilhamento, membros e convites pendentes. -->
   <dialog class="modal share-modal" id="share-dialog" aria-labelledby="share-dialog-title">
     <div class="modal-heading">
       <div>

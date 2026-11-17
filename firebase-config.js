@@ -1,3 +1,4 @@
+// Configuração pública do projeto Firebase utilizada pelo cliente web.
 const firebaseConfig = {
   apiKey: "AIzaSyChaTxzkdxavmbhx48u_AhLP8JSyujB7uU",
   authDomain: "kabann-f4a18.firebaseapp.com",

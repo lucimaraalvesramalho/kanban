@@ -1,6 +1,7 @@
 const ALLOWED_ROLES = new Set(["OWNER", "EDITOR", "VIEWER"]);
 
 export function requireBoardMember(firestore, allowedRoles = ALLOWED_ROLES) {
+  // Confirma que o usuário pertence ao quadro e possui um dos papéis permitidos.
   return async (request, response, next) => {
     try {
       const boardRef = firestore.collection("boards").doc(request.boardId);

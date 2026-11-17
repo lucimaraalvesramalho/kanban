@@ -5,6 +5,7 @@ import { initializeFirebaseAdmin } from "./firebaseAdmin.js";
 
 const { FIREBASE_PROJECT_ID, GEMINI_API_KEY, GEMINI_MODEL, PORT, CORS_ALLOWED_ORIGINS } = process.env;
 
+// Impede iniciar o servidor sem uma chave obrigatória do provedor de IA.
 if (!GEMINI_API_KEY) {
   throw new Error("Configure GEMINI_API_KEY no ambiente do servidor.");
 }

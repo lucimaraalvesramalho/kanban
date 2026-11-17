@@ -1,4 +1,5 @@
 export function requireFirebaseAuth(auth) {
+  // Exige um token Firebase Bearer válido antes de executar o endpoint protegido.
   return async (request, response, next) => {
     const authorization = request.get("authorization") || "";
     const match = authorization.match(/^Bearer\s+(.+)$/i);

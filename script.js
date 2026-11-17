@@ -11,9 +11,11 @@ import {
 import { migrateCurrentUserBoard } from "./firebase-migrations.js";
 import aiConfig from "./ai-config.js";
 
+// Chave de preferência local e prioridades aceitas pelos cards.
 const THEME_KEY = "meu-kanban-theme-v1";
 const PRIORITIES = ["baixa", "media", "alta"];
 
+// Estado da interface e referências usadas pelas telas de autenticação e quadro.
 let state = { columns: [] };
 let currentUser = null;
 let draggedCardId = null;
@@ -37,6 +39,7 @@ const columnDialog = document.querySelector("#column-dialog");
 const newBoardDialog = document.querySelector("#new-board-dialog");
 const shareDialog = document.querySelector("#share-dialog");
 
+// Mapa centralizado dos elementos da página usados pelos manipuladores.
 const ui = {
   appShell: document.querySelector("#app-shell"),
   authScreen: document.querySelector("#auth-screen"),
@@ -88,6 +91,7 @@ const ui = {
   aiMessages: document.querySelector("#ai-messages")
 };
 
+// Identificadores são gerados pelo navegador para colunas, cards e requisições.
 function createId() {
   return crypto.randomUUID();
 }
@@ -118,6 +122,7 @@ function aiApiUrl(path) {
   return `${aiConfig.apiBaseUrl.replace(/\/+$/, "")}${path}`;
 }
 
+// Reseta a conversa ao trocar de quadro e fecha o painel lateral.
 function resetAiConversation(boardId = null) {
   if (aiBoardId === boardId) return;
   aiBoardId = boardId;
@@ -157,6 +162,7 @@ function setAiPanelOpen(open) {
 }
 
 async function sendAiQuestion(value) {
+  // Envia a pergunta autenticada ao backend e atualiza a conversa na interface.
   const question = value.trim();
   if (!question || !activeBoard || !currentUser || aiRequestId) return;
   if (question.length > 500) {
@@ -217,6 +223,7 @@ async function sendAiQuestion(value) {
 }
 
 function renderCardChecklist(card) {
+  // Renderiza os itens de checklist e permite marcar ou remover subtarefas.
   ui.cardChecklist.replaceChildren();
   const checklist = Array.isArray(card?.checklist) ? card.checklist : [];
   if (!checklist.length) {
@@ -250,6 +257,7 @@ function renderCardChecklist(card) {
 }
 
 async function generateCardSubtasks() {
+  // Solicita ao backend que divida o card atual em subtarefas.
   const cardId = ui.cardForm.dataset.cardId;
   const card = cardId && findCard(cardId);
   if (!canEditTasks() || !card || !activeBoard || !currentUser) return;
@@ -305,6 +313,7 @@ async function generateCardSubtasks() {
 }
 
 function getBoardMembershipPath(boardId, userId) {
+  // Monta o caminho da associação do usuário dentro de um quadro.
   return ["boards", boardId, "members", userId];
 }
 
@@ -313,11 +322,13 @@ function getTaskPath(boardId, taskId) {
 }
 
 function showOperationError(message, error) {
+  // Exibe erros de operações Firestore sem esconder o quadro atual.
   console.error(message, error);
   window.alert(message);
 }
 
 function applyBoardPermissions() {
+  // Atualiza controles conforme o papel do usuário no quadro ativo.
   const owner = isOwner();
   const editor = canEditTasks();
   ui.addCard.hidden = !editor;
@@ -329,6 +340,7 @@ function applyBoardPermissions() {
 }
 
 function renderBoardNavigation() {
+  // Separar e renderizar quadros próprios e compartilhados.
   ui.ownedBoards.replaceChildren();
   ui.sharedBoards.replaceChildren();
 
@@ -349,6 +361,7 @@ function renderBoardNavigation() {
 }
 
 async function selectBoard(membership) {
+  // Troca o quadro ativo, cancela a assinatura anterior e carrega seus dados.
   if (!membership || !membership.boardId) return;
   const selectionId = ++boardSelectionId;
   const userId = currentUser && currentUser.uid;
@@ -413,6 +426,7 @@ async function selectBoard(membership) {
 }
 
 function subscribeToBoardMembership(firestore, membership) {
+  // Escuta alterações em tempo real no documento do quadro selecionado.
   if (unsubscribeMembership) unsubscribeMembership();
   const memberRef = firestore.doc(db, ...getBoardMembershipPath(membership.boardId, currentUser.uid));
   unsubscribeMembership = firestore.onSnapshot(memberRef, (snapshot) => {
@@ -446,6 +460,7 @@ function subscribeToBoardMembership(firestore, membership) {
 }
 
 function snapshotState() {
+  // Cria uma cópia do estado atual antes de iniciar uma gravação.
   return {
     columns: state.columns.map((column) => ({
       ...column,
@@ -455,6 +470,7 @@ function snapshotState() {
 }
 
 async function persistBoardState(snapshot, boardInfo, previousTaskIds) {
+  // Sincroniza metadados do quadro e cria, atualiza ou exclui tarefas no Firestore.
   if (!boardInfo || !currentUser) return new Set();
 
   const firestore = await getFirestoreApi();
@@ -527,6 +543,7 @@ async function persistBoardState(snapshot, boardInfo, previousTaskIds) {
 }
 
 function saveState() {
+  // Enfileira alterações para evitar gravações simultâneas no Firestore.
   if (!activeBoard || !currentUser) return Promise.resolve();
   const snapshot = snapshotState();
   const boardInfo = { ...activeBoard };
@@ -548,6 +565,7 @@ function saveState() {
 }
 
 async function acceptPendingInvites(user) {
+  // Ativa convites pendentes quando o usuário entra ou cria sua conta.
   if (!user.email) return 0;
 
   const firestore = await getFirestoreApi();
@@ -594,6 +612,7 @@ async function acceptPendingInvites(user) {
 }
 
 async function loadBoardList(user) {
+  // Migra o quadro legado, identifica associações e monta a lista de quadros.
   const firestore = await getFirestoreApi();
   const memberQuery = firestore.query(
     firestore.collectionGroup(db, "members"),
@@ -629,6 +648,7 @@ async function loadBoardList(user) {
 }
 
 function handleAuthenticatedUser(user) {
+  // Decide a interface exibida depois da alteração do estado de autenticação.
   boardSelectionId += 1;
   if (unsubscribeMembership) {
     unsubscribeMembership();
@@ -676,6 +696,7 @@ function handleAuthenticatedUser(user) {
 }
 
 function makeElement(tag, className, text) {
+  // Cria elementos simples já configurados com classe e conteúdo.
   const element = document.createElement(tag);
   if (className) element.className = className;
   if (text !== undefined) element.textContent = text;
@@ -692,6 +713,7 @@ function makeIconButton(label, symbol, className, onClick) {
 }
 
 function renderBoard() {
+  // Renderiza colunas e cards aplicando busca e filtro de prioridade.
   board.replaceChildren();
   const searchTerm = ui.search.value.trim().toLocaleLowerCase("pt-BR");
   const selectedPriority = ui.priority.value;
@@ -747,12 +769,14 @@ function renderBoard() {
 }
 
 function matchesFilters(card, searchTerm, selectedPriority) {
+  // Testa se um card atende aos filtros digitados pelo usuário.
   const matchesText = !searchTerm ||
     `${card.title} ${card.description}`.toLocaleLowerCase("pt-BR").includes(searchTerm);
   return matchesText && (selectedPriority === "todas" || card.priority === selectedPriority);
 }
 
 function createCardElement(card, column) {
+  // Monta visualmente um card com metadados e ações disponíveis.
   const element = makeElement("article", "task-card");
   element.draggable = canEditTasks();
   element.dataset.cardId = card.id;
@@ -841,6 +865,7 @@ function addDropEvents(columnElement) {
 }
 
 function moveCard(cardId, targetColumnId, targetCardId, pointerY, targetElement) {
+  // Move um card no estado local e agenda sua persistência.
   if (!canEditTasks() || !cardId || cardId === targetCardId) return;
 
   let sourceColumn;
@@ -880,6 +905,7 @@ function restoreFocus() {
 }
 
 function openCardDialog(cardId, columnId) {
+  // Preenche o modal para criar ou editar um card.
   if (!canEditTasks()) return;
   rememberFocus();
   ui.cardForm.dataset.columnId = columnId || state.columns[0].id;
@@ -900,6 +926,7 @@ function openCardDialog(cardId, columnId) {
 }
 
 function openColumnDialog(columnId) {
+  // Preenche o modal para criar ou renomear uma coluna.
   if (!isOwner()) return;
   rememberFocus();
   editingColumnId = columnId;
@@ -960,6 +987,7 @@ function getRoleLabel(role) {
 }
 
 async function refreshShareLists() {
+  // Atualiza membros confirmados e convites pendentes do quadro ativo.
   if (!canManageMembers() || !activeBoard) return;
 
   try {
@@ -1072,6 +1100,7 @@ function openShareDialog() {
 }
 
 async function createInvitation(event) {
+  // Cria ou atualiza um convite de acesso para um endereço de e-mail.
   event.preventDefault();
   if (!canManageMembers() || !activeBoard) return;
 
@@ -1133,6 +1162,7 @@ async function createInvitation(event) {
 }
 
 async function createBoard(event) {
+  // Cria um novo quadro no Firestore e ativa-o na interface.
   event.preventDefault();
   const name = ui.newBoardName.value.trim();
   if (!name || !currentUser) return;
@@ -1198,6 +1228,7 @@ async function deleteDocumentRefs(firestore, refs) {
 }
 
 async function deleteActiveBoard() {
+  // Exclui o quadro ativo e redireciona a seleção para outro disponível.
   if (!isOwner() || !activeBoard) return;
   const boardId = activeBoard.boardId;
   const boardName = activeBoard.boardName;
@@ -1283,6 +1314,7 @@ function setAuthMode(mode) {
 }
 
 async function handleAuthSubmit(event) {
+  // Executa login ou criação de conta conforme a aba selecionada.
   event.preventDefault();
 
   const email = ui.authEmail.value.trim();
@@ -1345,6 +1377,7 @@ function initializeAuthUi() {
 }
 
 function initializeBoardUi() {
+  // Liga filtros, ações do quadro, modais e teclado aos manipuladores.
   ui.search.addEventListener("input", renderBoard);
   ui.priority.addEventListener("change", renderBoard);
 
@@ -1492,6 +1525,7 @@ function applyTheme() {
 }
 
 async function startAuthListener() {
+  // Observa alterações da sessão e inicializa ou desativa a interface.
   if (!firebaseReady) {
     showAuthScreen("Configure o firebase-config.js com as chaves do seu projeto Firebase.");
     return;

@@ -1,4 +1,5 @@
 export class AiProviderError extends Error {
+  // Padroniza falhas retornadas pelo provedor de IA.
   constructor(kind) {
     super("Falha no provedor de IA.");
     this.name = "AiProviderError";
@@ -13,6 +14,7 @@ export function createGeminiGenerator({
   timeoutMs = 15000
 }) {
   return async function generateAnswer(prompt) {
+    // Valida a configuração, aplica timeout e envia o prompt ao Gemini.
     if (!apiKey) {
       throw new AiProviderError("configuration");
     }

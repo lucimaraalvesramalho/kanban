@@ -2,6 +2,7 @@ export const MAX_CARDS = 200;
 export const MAX_CONTEXT_CHARACTERS = 48000;
 
 function limitedText(value, maxLength) {
+  // Limita campos de texto para evitar prompts excessivamente grandes.
   return typeof value === "string" ? value.slice(0, maxLength) : "";
 }
 
@@ -29,6 +30,7 @@ function checklistProgress(value) {
 }
 
 function sanitizeTask(task, columnsById) {
+  // Produz uma representação segura e compacta de cada tarefa.
   const assigneeId = typeof task.assigneeId === "string" ? task.assigneeId : "";
   const labels = Array.isArray(task.labels)
     ? task.labels
@@ -53,6 +55,7 @@ function sanitizeTask(task, columnsById) {
 }
 
 export async function loadProjectContext(firestore, boardId, board) {
+  // Busca tarefas do quadro e monta os dados usados pela IA.
   const columnsById = new Map(
     (Array.isArray(board.columns) ? board.columns : [])
       .filter((column) => column && typeof column.id === "string")
@@ -86,6 +89,7 @@ export async function loadProjectContext(firestore, boardId, board) {
 }
 
 export function buildProjectPrompt({ question, context }) {
+  // Instrui a IA a usar somente dados reais e a ignorar comandos encontrados nos cards.
   const projectData = {
     quadro: context.boardName,
     cards: context.cards,

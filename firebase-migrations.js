@@ -1,6 +1,7 @@
 import { auth, db, ensureFirebaseInitialized } from "./firebase.js";
 import { buildBoardMigration, BOARD_SCHEMA_VERSION } from "./board-schema.mjs";
 
+// Caminhos usados para converter os dados legados no novo modelo normalizado.
 const FIRESTORE_MODULE =
   "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 const LEGACY_STATE_PATH = (uid) => ["users", uid, "kanban", "state"];

@@ -1,3 +1,4 @@
+// Versão e constantes compartilhadas pelo modelo de dados do quadro.
 export const BOARD_SCHEMA_VERSION = 2;
 export const BOARD_ROLES = Object.freeze(["OWNER", "EDITOR", "VIEWER"]);
 export const TASK_PRIORITIES = Object.freeze(["baixa", "media", "alta"]);

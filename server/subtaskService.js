@@ -22,6 +22,7 @@ export class ChecklistLimitError extends Error {
 }
 
 export function buildSubtasksPrompt({ title, description }) {
+  // Cria um prompt restrito que solicita um JSON com 3 a 8 subtarefas.
   const taskData = {
     title: typeof title === "string" ? title.slice(0, 160) : "",
     description: typeof description === "string" ? description.slice(0, 500) : ""
@@ -34,6 +35,7 @@ DADOS_DA_TAREFA: ${JSON.stringify(taskData)}`;
 }
 
 export function parseSubtasksResponse(value) {
+  // Valida o JSON retornado pela IA antes de salvar qualquer item.
   let parsed;
   try {
     parsed = JSON.parse(value);
@@ -64,6 +66,7 @@ export async function appendSubtasksToTask({
   subtasks,
   serverTimestamp
 }) {
+  // Acrescenta subtarefas ao checklist dentro de uma transação Firestore.
   const taskRef = firestore
     .collection("boards")
     .doc(boardId)

@@ -17,6 +17,7 @@ const RATE_LIMIT_WINDOW_MS = 60 * 1000;
 const RATE_LIMIT_REQUESTS = 10;
 
 function validateChatInput(request, response, next) {
+  // Valida o identificador do quadro e o tamanho da pergunta recebida.
   const boardId = request.body?.boardId ?? request.body?.projectId;
   const question = request.body?.pergunta;
 
@@ -47,6 +48,7 @@ function validateChatInput(request, response, next) {
 }
 
 function validateSubtaskInput(request, response, next) {
+  // Valida os identificadores usados ao gerar subtarefas.
   const boardId = request.body?.boardId ?? request.body?.projectId;
   const taskId = request.params.taskId;
 
@@ -70,6 +72,7 @@ function validateSubtaskInput(request, response, next) {
 }
 
 function createUserRateLimiter({ limit, windowMs, now }) {
+  // Limita por usuário a quantidade de requisições em uma janela de tempo.
   const windows = new Map();
 
   return (request, response, next) => {
@@ -109,6 +112,7 @@ export function createApp({
   rateLimitWindowMs = RATE_LIMIT_WINDOW_MS,
   now = Date.now
 }) {
+  // Configura dependências, CORS, autenticação e rotas da API de IA.
   if (!auth || !firestore || typeof generateAnswer !== "function") {
     throw new Error("Dependências do servidor de IA não foram configuradas.");
   }

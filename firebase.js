@@ -1,5 +1,6 @@
 import firebaseConfig from "./firebase-config.js";
 
+// URLs dos módulos Firebase carregados sob demanda no navegador.
 const FIREBASE_MODULES = {
   app: "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js",
   auth: "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js",
@@ -15,6 +16,7 @@ function isPlaceholderValue(value) {
   );
 }
 
+// Indica se a configuração possui os dados mínimos para iniciar o Firebase.
 export let firebaseReady = Boolean(
   firebaseConfig &&
   typeof firebaseConfig === "object" &&
@@ -30,6 +32,7 @@ export let db = null;
 let initializationPromise = null;
 
 async function initializeFirebase() {
+  // Carrega e inicia os módulos somente quando a configuração está válida.
   if (!firebaseReady) {
     return;
   }
